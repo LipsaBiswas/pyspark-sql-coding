@@ -1,0 +1,32 @@
+## Find the missing integers in the column ##
+-------------------------------------------
+
+## PySpark ##
+-------------
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import *
+spark = SparkSession.builder.appName("missingNumber").getOrCreate()
+
+data = [
+    (1, ),
+    (2,),
+    (3,),
+    (6,),
+    (7,),
+    (8,)]
+df = spark.createDataFrame(data).toDF("id")
+df.show()
+
+min_no = df.select(min("id")).first()[0]
+max_no = df.select(max("id")).first()[0]
+all_data_df = spark.range(min_no , max_no+1)
+all_data_df.show()
+all_data_df.subtract(df).select(col("id").alias("missing_ids")).sort("missing_ids")
+
+## Output ###
+---------------
+missing_ids
+4
+5
