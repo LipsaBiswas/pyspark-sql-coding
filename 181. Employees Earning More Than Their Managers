@@ -1,0 +1,39 @@
+## 181. Employees Earning More Than Their Managers ##
+-----------------------------------------------------
+
+## PySpark ##
+---------------
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import *
+spark = SparkSession.builder.appName("EmployeesEarningMoreThanManager").getOrCreate()
+data = [
+    (1, 'John Doe', 60000.0, 3),
+    (2, 'Jane Smith', 95000.0, 3),
+    (3, 'Tom Johnson', 90000.0, 4),
+    (4, 'Alice Brown', 120000.0, 5),
+    (5, 'Bob White', 80000.0, 4),
+    (6, 'Eva Davis', 65000.0, 3),
+    # Add more tuples as needed
+]
+schema = StructType(
+    [
+        StructField("employee_id" , IntegerType()),
+        StructField("name" , StringType()),
+        StructField("salary" , FloatType()),
+        StructField("manager_id" , IntegerType())
+    ]
+)
+df = spark.createDataFrame(data , schema)
+df  = df.alias("employees") \
+.join(df.alias("managers") , col("employees.manager_id") == col("managers.employee_id") , "inner") \
+.filter(col("employees.salary")  > col("managers.salary") ) \
+.select(col("employees.name").alias("Employee_earning_more_than_manager"))
+df
+
+
+## output ##
+Employee_earning_more_than_manager
+Jane Smith
+Alice Brown
