@@ -1,0 +1,75 @@
+##  Leetcode : 1045. Customers who bought all products ##
+## PySpark programming(dataframe) and SQL solution
+---------------------------------------------------------
+https://leetcode.com/problems/customers-who-bought-all-products/
+
+## PySpark ##
+-------------
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import *
+spark = SparkSession.builder.appName("customerWhoBoughtAllProducts").getOrCreate()
+
+customer_data = [
+    (1,5) ,
+    (2,6) ,
+    (3,5) ,
+    (3,6) ,
+    (1,6) 
+]
+
+product_data =[
+    (5,),
+    (6,)
+]
+
+customer_schema  = StructType(
+    [
+        StructField("customer_id" , IntegerType()),
+        StructField("product_key" , IntegerType())
+    ]
+)
+
+product_schema  = StructType(
+    [
+        StructField("product_key" , IntegerType()) 
+    ]
+)
+customer_df = spark.createDataFrame(customer_data ,customer_schema )
+product_df = spark.createDataFrame(product_data ,product_schema )
+print(customer_df)
+print(product_df)
+
+df = customer_df.groupby("customer_id") \
+.agg(countDistinct("product_key").alias("cnt")) \
+.where(col("cnt") == product_df.count()) \
+.select("customer_id")
+
+df
+
+## Output ##
+----------------
+customer_id
+1
+3
+
+######################################################################################
+## Spark SQL ##
+------------------------------------------------------------------------------------
+customer_df.createOrReplaceTempView("customers")
+product_df.createOrReplaceTempView("products")
+
+spark.sql('''
+SELECT customer_id  
+FROM customers
+GROUP BY customer_id
+HAVING count(distinct product_key )  = (SELECT Count(*) FROM products )
+'''
+)
+
+## output ##
+--------------
+customer_id
+1
+3
