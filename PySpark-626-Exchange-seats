@@ -1,0 +1,78 @@
+## PySpark - 626. Exchange Seats ##
+---------------------------------
+
+https://leetcode.com/problems/exchange-seats/
+Input: 
+Seat table:
++----+---------+
+| id | student |
++----+---------+
+| 1  | Abbot   |
+| 2  | Doris   |
+| 3  | Emerson |
+| 4  | Green   |
+| 5  | Jeames  |
++----+---------+
+Output: 
++----+---------+
+| id | student |
++----+---------+
+| 1  | Doris   |
+| 2  | Abbot   |
+| 3  | Green   |
+| 4  | Emerson |
+| 5  | Jeames  |
++----+---------+
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+from pyspark.sql.window import Window
+
+
+spark = SparkSession.builder \
+.appName("ExchangeSeats") \
+.getOrCreate()
+
+seat_data = [
+    (1 , 'Abbot'),
+    (2, 'Doris'),
+    (3, 'Emerson' ),
+    (4, 'Green'),
+    (5,'Jeames' )
+]
+ 
+seat_schema = StructType(
+[
+    StructField("id" , IntegerType()),
+    StructField("student" , StringType())
+])
+
+seat_df = spark.createDataFrame(seat_data ,seat_schema )
+seat_df
+
+df = seat_df.withColumn("previous_student" , lag("student").over(Window.orderBy("id")) ) \
+.withColumn("next_student" , lead("student").over(Window.orderBy("id")) )
+
+df1 = df.withColumn("exchange" ,coalesce( when(  col("id")%2==0  ,df.previous_student )
+              .when(  col("id")%2!=0  ,df.next_student)  , df.student)) \
+              .select("id", "exchange") \
+              .withColumnRenamed("exchange", "student")
+
+df1.show()
+spark.stop()
+
+## Output ##
+---------------
++---+-------+
+| id|student|
++---+-------+
+|  1|  Doris|
+|  2|  Abbot|
+|  3|  Green|
+|  4|Emerson|
+|  5| Jeames|
++---+-------+
+
+------------
