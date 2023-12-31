@@ -1,0 +1,113 @@
+## (LC) 1098. Unpopular books ##
+------------------------------------
+Write an SQL query that reports the books that have sold less than 10 copies in the last year, excluding books that have been available for less than 1 month from today. Assume today is 2019-06-23.
+
+## PySpark ##
+--------------
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+from pyspark.sql.window import Window
+
+spark = SparkSession.builder \
+.appName("UnpopularBooks") \
+.getOrCreate()
+
+Books table:
++---------+--------------------+----------------+
+| book_id | name               | available_from |
++---------+--------------------+----------------+
+| 1       | "Kalila And Demna" | 2010-01-01     |
+| 2       | "28 Letters"       | 2012-05-12     |
+| 3       | "The Hobbit"       | 2019-06-10     |
+| 4       | "13 Reasons Why"   | 2019-06-01     |
+| 5       | "The Hunger Games" | 2008-09-21     |
++---------+--------------------+----------------+
+
+Orders table:
++----------+---------+----------+---------------+
+| order_id | book_id | quantity | dispatch_date |
++----------+---------+----------+---------------+
+| 1        | 1       | 2        | 2018-07-26    |
+| 2        | 1       | 1        | 2018-11-05    |
+| 3        | 3       | 8        | 2019-06-11    |
+| 4        | 4       | 6        | 2019-06-05    |
+| 5        | 4       | 5        | 2019-06-20    |
+| 6        | 5       | 9        | 2009-02-02    |
+| 7        | 5       | 8        | 2010-04-13    |
++----------+---------+----------+---------------+
+
+Result table:
++-----------+--------------------+
+| book_id   | name               |
++-----------+--------------------+
+| 1         | "Kalila And Demna" |
+| 2         | "28 Letters"       |
+| 5         | "The Hunger Games" |
++-----------+--------------------+
+
+books_data =[
+    ( 1  , "Kalila And Demna" , '2010-01-01'    ),
+    ( 2, "28 Letters" ,"2012-05-12"),
+    ( 3, "The Hobbit" ,"2019-06-10"),
+    ( 4, "13 Reasons Why" , "2019-06-01"),
+    ( 5, "The Hunger Games" , "2008-09-21")
+]
+
+orders_data =[
+    (1,1,2,'2018-07-26'),
+    (2,1,1,'2018-11-05'),
+    (3,3,8 , '2019-06-11'),
+    (4,4,6,'2019-06-05'),
+    (5,4,5,'2019-06-20'),
+    (6,5,9,'2009-02-02'),
+    (7,5,8, '2010-04-13')    
+]
+
+books_schema = StructType(
+    [
+        StructField("book_id"  , IntegerType()),
+        StructField("name"  , StringType()),
+        StructField("available_from"  , StringType())
+    ]
+)
+books_df = spark.createDataFrame(books_data , books_schema)
+books_df=books_df.withColumn("available_from" ,to_date(col("available_from")))
+
+orders_schema = StructType(
+    [
+        StructField("order_id"  , IntegerType()),
+        StructField("book_id"  , IntegerType()),
+        StructField("quantity"  , IntegerType()),
+        StructField("dispatch_date"  , StringType())
+    ]
+)
+order_df = spark.createDataFrame(orders_data , orders_schema)
+order_df=order_df.withColumn("dispatch_date" ,to_date(col("dispatch_date")))
+order_df.show()
+
+
+current_date = '2019-06-23'
+selected_books_df = books_df.filter(months_between(to_date(lit(current_date) ), col("available_from")) > 1)
+selected_books_df.show()
+
+
+last_year_orders = order_df.filter(months_between(to_date(lit(current_date) ) ,col("dispatch_date") )<=12)
+last_year_orders
+
+
+books_orders = last_year_orders.join(selected_books_df , "book_id" ,"right")
+grouped_data =books_orders.groupby("book_id").agg(  sum( (col("quantity")   )).alias("total_quantity_sold")) 
+
+grouped_data.filter("total_quantity_sold < 10 OR total_quantity_sold IS NULL ") \
+.join(selected_books_df , "book_id") \
+.select("book_id","name") \
+.sort("book_id").show()
+
++-------+----------------+
+|book_id|            name|
++-------+----------------+
+|      1|Kalila And Demna|
+|      2|      28 Letters|
+|      5|The Hunger Games|
++-------+----------------+
