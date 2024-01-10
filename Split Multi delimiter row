@@ -1,0 +1,40 @@
+Split Multi Delimiter row
+=================================
+Input:
+
++---+--------+--------+
+| id|    name|   marks|
++---+--------+--------+
+|  1|Abhishek|10|30|40|
+|  2| Krishna|50|40|70|
+|  3|  rakesh|20|70|90|
++---+--------+--------+
+
+Output :
++---+--------+--------+-----+-------+----+
+| id|    name|   marks|maths|physics|chem|
++---+--------+--------+-----+-------+----+
+|  1|Abhishek|10|30|40|   10|     30|  40|
+|  2| Krishna|50|40|70|   50|     40|  70|
+|  3|  rakesh|20|70|90|   20|     70|  90|
++---+--------+--------+-----+-------+----+
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.functions import *
+spark = SparkSession.builder.appName("myApp").getOrCreate()
+
+data = [(1, "Abhishek", "10|30|40"),
+        (2, "Krishna", "50|40|70"),
+        (3, "rakesh", "20|70|90")]
+df = spark.createDataFrame(data, schema=["id", "name", "marks"])
+df.show()
+
+df1 = df.withColumn("mark_details" , split(col("marks") , "[|]")) \
+.withColumn("maths" , col("mark_details")[0]) \
+.withColumn("physics" , col("mark_details")[1]) \
+.withColumn("chem" , col("mark_details")[2]) \
+.drop("mark_details")
+df1.show()
+
