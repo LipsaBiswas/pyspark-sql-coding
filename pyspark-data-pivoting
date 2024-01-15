@@ -1,0 +1,42 @@
+Task - Transform the input DataFrame into a new DataFrame , where each row represents a unique student, and the columns include the student's name along with the marks for the "math" and "eng" subjects.
+
+Input -
++-----+----+-----+
+| Name| Sub|Marks|
++-----+----+-----+
+|Rudra|math|   79|
+|Rudra| eng|   60|
+|Shivu|math|   68|
+|Shivu| eng|   59|
+|  Anu|math|   65|
+|  Anu| eng|   80|
++-----+----+-----+
+
+Output -
++-----+---+----+
+| Name|eng|math|
++-----+---+----+
+|Shivu| 59|  68|
+|Rudra| 60|  79|
+|  Anu| 80|  65|
++-----+---+----+
+
+Solution - 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+
+data=[
+('Rudra','math',79),
+('Rudra','eng',60),
+('Shivu','math', 68),
+('Shivu','eng', 59),
+('Anu','math', 65),
+('Anu','eng',80)
+]
+schema="Name string,Sub string,Marks int"
+df=spark.createDataFrame(data,schema)
+print(df)
+result = df.groupby("Name").pivot("Sub").agg(first(df.Marks))
+print(result)
+spark.stop()
