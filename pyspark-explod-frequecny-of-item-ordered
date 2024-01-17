@@ -1,0 +1,63 @@
+Task - The dataset contains information about food items in bills. Your assignment is to determine the frequency of each food item ordered.
+
+data = [
+ (101, ["dosa", "biriyani", "idli"]),
+ (102, ["biriyani", "mineral water"]),
+ (103, ["rice", "mineral water", "poha"]),
+ (109, ["idli", "biriyani", "poha"]),
+]
+
+
+Input:
++-------+---------------------------+
+|bill_id|food_items                 |
++-------+---------------------------+
+|101    |[dosa, biriyani, idli]     |
+|102    |[biriyani, mineral water]  |
+|103    |[rice, mineral water, poha]|
+|109    |[idli, biriyani, poha]     |
++-------+---------------------------+
+
+Output:
+
++-------------+-----+
+|         item|count|
++-------------+-----+
+|     biriyani|    3|
+|         poha|    2|
+|         idli|    2|
+|mineral water|    2|
+|         rice|    1|
+|         dosa|    1|
++-------------+-----+
+
+Solution
+==================================
+  from pyspark.sql import SparkSession
+from pyspark.sql.functions import explode, desc
+spark = SparkSession.builder.appName("myApp").getOrCreate()
+
+data = [
+    (101, ["dosa", "biriyani", "idli"]),
+    (102, ["biriyani", "mineral water"]),
+    (103, ["rice", "mineral water", "poha"]),
+    (109, ["idli", "biriyani", "poha"]),
+]
+ 
+schema = ["bill_id", "food_items"]
+df = spark.createDataFrame(data, schema=schema)
+(df.show(truncate=False))
+
+exploded_df =\
+df.select("bill_id",\
+explode(df.food_items).alias("item"))  
+
+print(exploded_df)
+
+exploded_df.groupby("item").count() \
+.sort(desc("count")).show()
+
+# grouped_data = exploded_df.groupby("item").count()
+# (grouped_data.sort(desc("count")).show(truncate=False))
+
+
