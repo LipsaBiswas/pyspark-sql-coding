@@ -1,0 +1,51 @@
+Task - You are provided with two datasets, branch1 and branch2 , representing information about students and their marks in different subjects across different branches. 
+Your goal is to combine these datasets into one final dataset. Missing text information should be shown as 'unknown' , and missing numerical information should be shown as -9999. 
+
+Data:
+branch1 = spark.createDataFrame([["Delhi", "Neha", 90]], ["Branch", "Student", "Maths_marks"])
+branch2 = spark.createDataFrame([["Arav","Kolkata", 79, 83], [None,"Kolkata", 89, 73]], ["Student", "Branch", "Science_marks", "Maths_marks"])
+
+Input
+===================
+
+branch1
++------+-------+-----------+
+|Branch|Student|Maths_marks|
++------+-------+-----------+
+| Delhi|   Neha|         90|
++------+-------+-----------+
+
+branch2
++-------+-------+-------------+-----------+
+|Student| Branch|Science_marks|Maths_marks|
++-------+-------+-------------+-----------+
+|   Arav|Kolkata|           79|         83|
+|   null|Kolkata|           89|         73|
++-------+-------+-------------+-----------+
+
+Output
+==========================
++-------+---------+-----------+-------------+
+| Branch|  Student|Maths_marks|Science_marks|
++-------+---------+-----------+-------------+
+|  Delhi|     Neha|         90|        -9999|
+|Kolkata|     Arav|         83|           79|
+|Kolkata|'Unknown'|         73|           89|
++-------+---------+-----------+-------------+
+
+Code
+===================
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+spark = SparkSession.builder.appName("myapp").getOrCreate()
+
+# Using allowMissingColumns
+branch1 = spark.createDataFrame([["Delhi", "Neha", 90]], ["Branch", "Student", "Maths_marks"])
+branch2 = spark.createDataFrame([["Arav","Kolkata", 79, 83], [None,"Kolkata", 89, 73]], ["Student", "Branch", "Science_marks", "Maths_marks"])
+print("branch1")
+print(branch1)
+print("branch2")
+print(branch2)
+final_result = branch1.unionByName(branch2 , allowMissingColumns=True ).fillna('\'Unknown\'').fillna(-9999) 
+final_result.show()
