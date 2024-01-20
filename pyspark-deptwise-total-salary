@@ -1,0 +1,82 @@
+Task
+===
+Find department wise total salary
+
+Input
+======
+Employee
++----+-------+------+
+|name|dept_id|salary|
++----+-------+------+
+|   a|      1|   500|
+|   b|      1|   100|
+|   c|      2|   200|
+|   d|      3|   800|
+|   e|      2|   300|
++----+-------+------+
+Dept
++-------+---------+
+|dept_id|dept_name|
++-------+---------+
+|      1|       IT|
+|      2|    Sales|
+
+Ouput
+========
+  from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+spark = SparkSession.builder.appName("myapp").getOrCreate()
+
+emp_data = [
+    ('a' , 1, 500),
+    ('b' , 1, 100),
+    ('c' , 2, 200),
+    ('d' , 3, 800),
+    ('e' , 2, 300),
+]
+emp_schema = StructType(
+    [
+        StructField("name" , StringType() , True),
+        StructField("dept_id" , IntegerType() , True),
+        StructField("salary" , IntegerType() , True)
+    ]
+)
+emp_df = spark.createDataFrame(emp_data , emp_schema)
+emp_df.show()
+
+dept_data = [
+    ( 1, 'IT'),
+    ( 2, 'Sales') 
+]
+dept_schema = StructType(
+    [ 
+        StructField("dept_id" , IntegerType() , True),
+        StructField("dept_name" , StringType() , True)
+    ]
+)
+dept_df = spark.createDataFrame(dept_data , dept_schema)
+dept_df.show()
+
+
+emp_df = emp_df.withColumnRenamed("dept_id", "employee_dept_id")
+dept_df = dept_df.withColumnRenamed("dept_id", "dep_dept_id")
+
+joined_data = emp_df.join(dept_df , emp_df.employee_dept_id ==  dept_df.dep_dept_id  , "left")
+ 
+
+# Show the result
+joined_data.show()
+
+df1 = joined_data.groupby("dep_dept_id").sum("salary")
+df1 = df1.withColumnRenamed("sum(salary)", "Total_salary")
+df1 = df1.select( coalesce("dep_dept_id",lit("NA")).alias("dep") , "Total_salary"   )
+df1.show()
+
++---+------------+
+|dep|Total_salary|
++---+------------+
+| NA|         800|
+|  1|         600|
+|  2|         500|
++---+------------+
