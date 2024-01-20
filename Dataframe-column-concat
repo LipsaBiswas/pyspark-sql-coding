@@ -1,0 +1,48 @@
+Task - Do the following foor the given dataframe:
+==============================================================
+a)  format the date string  to date in the format yyyy-MM-dd
+b)   Generate new column with b_1 (first letter from product _ orderid)
+
++--------+-------+----------+
+|order_id|product|order_date|
++--------+-------+----------+
+|       1|   book|2022-09-01|
+|       2| laptop|2022-09-02|
+|       3|  mouse|2022-09-03|
+|       4|    bag|2022-09-05|
++--------+-------+----------+
+root
+ |-- order_id: long (nullable = true)
+ |-- product: string (nullable = true)
+ |-- order_date: string (nullable = true)
+
+
+Solution
+=====================================
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+spark = SparkSession.builder.appName("myapp").getOrCreate()
+
+data = [
+    (1,'book' ,'2022-09-01' ),
+    (2, 'laptop' , '2022-09-02'),
+    (3, 'mouse', '2022-09-03'),
+    (4, 'bag' , '2022-09-05')
+]
+df = spark.createDataFrame(data).toDF("order_id","product", "order_date")
+df.show()
+df.printSchema()
+
+df = df.withColumn("order_date", to_date("order_date" , "yyyy-MM-dd"))
+df =df.withColumn("b_1" , concat_ws("_",substring(df.product,1,1),df.order_id ))
+df.show()
+
++--------+-------+----------+---+
+|order_id|product|order_date|b_1|
++--------+-------+----------+---+
+|       1|   book|2022-09-01|b_1|
+|       2| laptop|2022-09-02|l_2|
+|       3|  mouse|2022-09-03|m_3|
+|       4|    bag|2022-09-05|b_4|
++--------+-------+----------+---+
