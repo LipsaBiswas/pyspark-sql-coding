@@ -1,0 +1,38 @@
+Data :
++---+----------+------+
+| Id|      Name|Salary|
++---+----------+------+
+|  1|Aditya Sen|   100|
+|  2|     Binny|   200|
+|  1|aditya das|   100|
+|  2|   binny K|   200|
+|  3|   Chinmoy|   400|
+|  4|     Danny|   500|
+|  5|       Eli|   100|
++---+----------+------+
+
+Search the rows where name contains 'Aditya' 
+
+df.filter(col("Name").contains("aditya")).show()
++---+----------+------+
+| Id|      Name|Salary|
++---+----------+------+
+|  1|aditya das|   100|
++---+----------+------+
+
+df.filter(col("Name").like("%aditya%")).show()
++---+----------+------+
+| Id|      Name|Salary|
++---+----------+------+
+|  1|aditya das|   100|
++---+----------+------+
+
+
+df.filter(col("Name").rlike("(?i)aditya")).show()
++---+----------+------+
+| Id|      Name|Salary|
++---+----------+------+
+|  1|Aditya Sen|   100|
+|  1|aditya das|   100|
++---+----------+------+
+Make sure to include (?i) at the beginning of your regex pattern to enable case-insensitive matching. 
