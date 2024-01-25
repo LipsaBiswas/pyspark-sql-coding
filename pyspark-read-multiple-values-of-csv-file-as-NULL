@@ -1,0 +1,49 @@
+'Read multiple values of a CSV file as NULL values '
+
+Task - We have a CSV file containing columns Id, first, last, age, and salary. The dataset includes invalid entries such as empty strings (''),
+special characters like '$' and '#', and 'NA'. When reading this CSV file into a PySpark DataFrame, our objective is to interpret these invalid entries as NULL values.
+
+CSV data
+========
+Id,first,last,age,salary
+1,Neha,D,#,100
+2,#,K,,200
+3,$,B,30,200
+4,NA,M,35,300
+5,Mark,L,29,100
+6,Ron,S,$,500
+
+Output
+======
++---+-----+----+----+------+
+| Id|first|last| age|salary|
++---+-----+----+----+------+
+|  1| Neha|   D|null|   100|
+|  2| null|   K|null|   200|
+|  3| null|   B|  30|   200|
+|  4| null|   M|  35|   300|
+|  5| Mark|   L|  29|   100|
+|  6|  Ron|   S|null|   500|
++---+-----+----+----+------+
+
+Solution
+==========
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import when
+
+spark = SparkSession.builder.appName("myApp").getOrCreate()
+ 
+df = spark.read \
+    .format("csv") \
+    .option("header", "true") \
+    .option("inferschema", "true") \
+    .load("data/emp_data.csv")
+
+# Specify multiple null values
+null_values = ["$", "#", "&", 'NA']
+
+# Replace specified null values with None
+for col in df.columns:
+    df = df.withColumn(col, when(df[col].isin(null_values), None).otherwise(df[col]))
+ 
+df.show()
