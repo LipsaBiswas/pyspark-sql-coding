@@ -1,0 +1,78 @@
+Sort columsn having NULL values
+============================
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+spark = SparkSession.builder.appName("myapp").getOrCreate()
+data = [
+    (1, "Aditya Sen" , None),
+    (2, "Bikramaditya" , 200),
+    (3, "Mark T" , 100),
+    (4, "D K aditya" , None), 
+    (5, "Danny" , 500),
+    (6, "Eli" , 300),
+]
+df = spark.createDataFrame(data).toDF("Id" ,"Name" , "Salary")
+df.show()
+
++---+------------+------+
+| Id|        Name|Salary|
++---+------------+------+
+|  1|  Aditya Sen|  null|
+|  2|Bikramaditya|   200|
+|  3|      Mark T|   100|
+|  4|  D K aditya|  null|
+|  5|       Danny|   500|
+|  6|         Eli|   300|
++---+------------+------+
+
+df.select("Name", "Salary").orderBy(col("Salary").asc_nulls_first()).show()
++------------+------+
+|        Name|Salary|
++------------+------+
+|  Aditya Sen|  null|
+|  D K aditya|  null|
+|      Mark T|   100|
+|Bikramaditya|   200|
+|         Eli|   300|
+|       Danny|   500|
++------------+------+
+
+df.select("Name", "Salary").orderBy(col("Salary").asc_nulls_last()).show()
+  +------------+------+
+|        Name|Salary|
++------------+------+
+|      Mark T|   100|
+|Bikramaditya|   200|
+|         Eli|   300|
+|       Danny|   500|
+|  Aditya Sen|  null|
+|  D K aditya|  null|
++------------+------+
+  
+df.select("Name" , "Salary").orderBy(col("Salary").desc_nulls_first()).show()  
++------------+------+
+|        Name|Salary|
++------------+------+
+|  Aditya Sen|  null|
+|  D K aditya|  null|
+|       Danny|   500|
+|         Eli|   300|
+|Bikramaditya|   200|
+|      Mark T|   100|
++------------+------+
+  
+df.select("Name" , "Salary").orderBy(col("Salary").desc_nulls_last()).show()
++------------+------+
+|        Name|Salary|
++------------+------+
+|       Danny|   500|
+|         Eli|   300|
+|Bikramaditya|   200|
+|      Mark T|   100|
+|  D K aditya|  null|
+|  Aditya Sen|  null|
++------------+------+
+
+
+  
