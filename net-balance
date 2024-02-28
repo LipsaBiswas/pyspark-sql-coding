@@ -1,0 +1,60 @@
+Task - Show account wise net balance
+
+Input :
+
++-----+----------+------+----------------+------+
+|Sr_No|      Date|acc_no|transaction_type|amount|
++-----+----------+------+----------------+------+
+|    1|2024-01-01|ACC001|           Debit|   100|
+|    2|2024-01-02|ACC001|           Debit|    50|
+|    3|2024-01-03|ACC001|          Credit|   300|
+|    4|2024-01-01|ACC002|          Credit|   100|
+|    5|2024-01-04|ACC002|           Debit|   200|
++-----+----------+------+----------------+------+
+
+Output :
+
++------+-----------+
+|acc_no|net_balance|
++------+-----------+
+|ACC001|        150|
+|ACC002|       -100|
++------+-----------+
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+spark = SparkSession.builder.appName("Net-balance-app").getOrCreate()
+data = [
+    (1, '2024-01-01' , 'ACC001' , 'Debit', 100),
+    (2, '2024-01-02' , 'ACC001' , 'Debit', 50),
+    (3, '2024-01-03' , 'ACC001' , 'Credit', 300),
+    (4, '2024-01-01' , 'ACC002' , 'Credit', 100),
+    (5, '2024-01-04' , 'ACC002' , 'Debit', 200)
+    
+]
+_schema ="Sr_No integer, Date string , acc_no string , transaction_type string , amount integer"
+df = spark.createDataFrame(data , _schema)
+df.show()
+
+df_net_balance= df.groupby("acc_no") \   
+.agg(
+     sum(when(df.transaction_type =='Credit' , df.amount).otherwise(0)).alias("Credit"),
+     sum(when(df.transaction_type =='Debit' , df.amount).otherwise(0)).alias("Debit")
+    ) \
+.withColumn("net_balance" , col("Credit") - col("Debit")) \
+.select("acc_no" , "net_balance")
+
+df_net_balance.show()
+
+#### SPARK SQL ####################
+
+df.createOrReplaceTempView("account_details")
+df_net_balance=  spark.sql ('''
+                            SELECT acc_no,
+                            (SUM( CASE WHEN transaction_type == 'Credit' THEN amount END ) - 
+                            SUM( CASE WHEN transaction_type == 'Debit' THEN amount END ))
+                            AS net_balance
+                            FROM account_details
+                            GROUP BY acc_no
+                            ''')
